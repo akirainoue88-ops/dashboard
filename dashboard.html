@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>現場ダッシュボード | 青海建設 第2工区</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --steel:#1E2A38;
+    --steel-2:#28394C;
+    --bg:#EEF1F4;
+    --card:#FFFFFF;
+    --amber:#FFB000;
+    --amber-d:#E39A00;
+    --blue:#0E6BA8;
+    --blue-l:#3E9BD8;
+    --red:#E23B3B;
+    --green:#2FA84F;
+    --ink:#172029;
+    --muted:#6B7683;
+    --line:#D8DEE5;
+    --line-2:#E7EBEF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:"Noto Sans JP",system-ui,sans-serif;
+    background:var(--bg);color:var(--ink);
+    line-height:1.5;font-size:14px;
+    padding-bottom:40px;
+  }
+  .num{font-family:"Barlow Semi Condensed",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+
+  /* ---------- Header rail ---------- */
+  header{
+    background:var(--steel);color:#fff;
+    border-bottom:3px solid var(--amber);
+    position:sticky;top:0;z-index:50;
+  }
+  .head-in{
+    max-width:1280px;margin:0 auto;padding:12px 20px;
+    display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .hardhat{
+    width:38px;height:38px;border-radius:9px;flex:none;
+    background:var(--amber);color:var(--steel);
+    display:grid;place-items:center;font-size:20px;
+    box-shadow:inset 0 -3px 0 rgba(0,0,0,.18);
+  }
+  .brand h1{font-size:16px;font-weight:700;line-height:1.15;white-space:nowrap}
+  .brand .site{font-size:11px;color:#9FB0C2;letter-spacing:.08em;font-weight:500}
+  .head-meta{margin-left:auto;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .clock{text-align:right;line-height:1.15}
+  .clock .t{font-size:20px;font-weight:600;color:var(--amber)}
+  .clock .d{font-size:11px;color:#9FB0C2;letter-spacing:.06em}
+  .weather{display:flex;align-items:center;gap:7px;font-size:13px;color:#CBD6E1;border-left:1px solid #3A4A5C;padding-left:16px}
+  .weather .wi{font-size:18px}
+  .bell{position:relative;font-size:20px;cursor:pointer;color:#CBD6E1;background:none;border:none;padding:4px}
+  .bell .dot{
+    position:absolute;top:0;right:0;background:var(--red);color:#fff;
+    font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;
+    display:grid;place-items:center;padding:0 4px;font-family:"Barlow Semi Condensed"
+  }
+  .user{display:flex;align-items:center;gap:9px;border-left:1px solid #3A4A5C;padding-left:16px}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}
+  .user .info{line-height:1.2}
+  .user .info b{font-size:13px}
+  .user .info span{font-size:11px;color:#9FB0C2}
+
+  /* ---------- Tabs ---------- */
+  nav.tabs{background:var(--steel-2);position:sticky;top:65px;z-index:40;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+  .tabs-in{max-width:1280px;margin:0 auto;display:flex;overflow-x:auto;scrollbar-width:none}
+  .tabs-in::-webkit-scrollbar{display:none}
+  .tab{
+    background:none;border:none;color:#A9B8C7;cursor:pointer;
+    padding:13px 20px;font-size:13px;font-weight:500;white-space:nowrap;
+    border-bottom:3px solid transparent;font-family:inherit;display:flex;align-items:center;gap:7px;
+  }
+  .tab:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .tab.active{color:#fff;border-bottom-color:var(--amber);background:rgba(255,176,0,.08)}
+  .tab .ti{font-size:15px}
+
+  /* ---------- Layout ---------- */
+  main{max-width:1280px;margin:0 auto;padding:22px 20px}
+  .panel{display:none;animation:fade .35s ease}
+  .panel.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .row{display:grid;gap:16px;margin-bottom:16px}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g23{grid-template-columns:2fr 1fr}
+  .g32{grid-template-columns:1fr 2fr}
+  @media(max-width:900px){.g4{grid-template-columns:repeat(2,1fr)}.g3,.g2,.g23,.g32{grid-template-columns:1fr}}
+  @media(max-width:520px){.g4{grid-template-columns:1fr 1fr}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .card h3{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-bottom:14px;display:flex;align-items:center;gap:8px;text-transform:uppercase}
+  .card h3 .bar{width:4px;height:14px;background:var(--amber);border-radius:2px}
+
+  /* KPI stat */
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden}
+  .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--amber)}
+  .kpi.blue::before{background:var(--blue)} .kpi.green::before{background:var(--green)} .kpi.red::before{background:var(--red)}
+  .kpi .lab{font-size:12px;color:var(--muted);font-weight:500;display:flex;justify-content:space-between;align-items:center}
+  .kpi .lab .ic{font-size:16px;opacity:.85}
+  .kpi .val{font-size:34px;font-weight:700;line-height:1.05;margin-top:6px}
+  .kpi .val small{font-size:15px;font-weight:600;color:var(--muted);margin-left:3px}
+  .kpi .sub{font-size:12px;margin-top:5px;display:flex;align-items:center;gap:5px}
+  .up{color:var(--green);font-weight:600} .down{color:var(--red);font-weight:600}
+  .flat{color:var(--muted)}
+
+  /* dial ring */
+  .dials{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:520px){.dials{grid-template-columns:1fr 1fr}}
+  .dial{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 10px;text-align:center}
+  .dial .ring{position:relative;width:112px;height:112px;margin:0 auto 8px}
+  .dial .ring svg{transform:rotate(-90deg)}
+  .dial .ring .ctr{position:absolute;inset:0;display:grid;place-items:center;flex-direction:column}
+  .dial .ring .ctr b{font-family:"Barlow Semi Condensed";font-size:28px;font-weight:700;line-height:1}
+  .dial .ring .ctr span{font-size:10px;color:var(--muted)}
+  .dial .name{font-size:13px;font-weight:500}
+  .dial .tgt{font-size:11px;color:var(--muted);margin-top:2px}
+
+  /* progress list */
+  .plist{display:flex;flex-direction:column;gap:15px}
+  .pitem .top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+  .pitem .top b{font-weight:500}
+  .pitem .top .pct{font-family:"Barlow Semi Condensed";font-weight:700}
+  .track{height:9px;background:var(--line-2);border-radius:5px;overflow:hidden}
+  .fill{height:100%;border-radius:5px;background:var(--blue);width:0;transition:width 1.1s cubic-bezier(.2,.7,.2,1)}
+  .fill.amber{background:var(--amber)} .fill.green{background:var(--green)} .fill.red{background:var(--red)}
+  .pitem .meta{font-size:11px;color:var(--muted);margin-top:4px}
+
+  /* alert feed */
+  .feed{display:flex;flex-direction:column;gap:2px}
+  .alert{display:flex;gap:11px;padding:11px 4px;border-bottom:1px solid var(--line-2)}
+  .alert:last-child{border-bottom:none}
+  .alert .ai{width:30px;height:30px;border-radius:8px;flex:none;display:grid;place-items:center;font-size:15px}
+  .alert.hi .ai{background:#FDE7E7;color:var(--red)}
+  .alert.md .ai{background:#FFF3D6;color:var(--amber-d)}
+  .alert.lo .ai{background:#E6F0F7;color:var(--blue)}
+  .alert .txt{font-size:13px;flex:1}
+  .alert .txt .tm{font-size:11px;color:var(--muted);margin-top:2px}
+  .tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.04em;white-space:nowrap;height:fit-content}
+  .tag.hi{background:#FDE7E7;color:var(--red)} .tag.md{background:#FFF3D6;color:var(--amber-d)} .tag.lo{background:#E6F0F7;color:var(--blue)}
+  .tag.ok{background:#E4F5EA;color:var(--green)}
+
+  .chart-wrap{position:relative;height:280px}
+  .chart-sm{position:relative;height:220px}
+
+  /* table */
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.04em;padding:8px 10px;border-bottom:2px solid var(--line);text-transform:uppercase}
+  td{padding:11px 10px;border-bottom:1px solid var(--line-2)}
+  tr:last-child td{border-bottom:none}
+  td.n{font-family:"Barlow Semi Condensed";font-weight:600;text-align:right}
+  th.n{text-align:right}
+  .chip{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:5px}
+  .chip.ok{background:#E4F5EA;color:var(--green)} .chip.warn{background:#FFF3D6;color:var(--amber-d)}
+  .chip.late{background:#FDE7E7;color:var(--red)} .chip.done{background:#E6F0F7;color:var(--blue)}
+
+  /* gantt */
+  .gantt{display:flex;flex-direction:column;gap:0}
+  .gh{display:grid;grid-template-columns:170px 1fr;font-size:10px;color:var(--muted);border-bottom:1px solid var(--line)}
+  .gh .months{display:grid;grid-template-columns:repeat(6,1fr)}
+  .gh .months span{padding:6px 4px;text-align:center;border-left:1px solid var(--line-2)}
+  .grow{display:grid;grid-template-columns:170px 1fr;align-items:center;border-bottom:1px solid var(--line-2)}
+  .grow:last-child{border-bottom:none}
+  .grow .gname{padding:10px 8px 10px 0;font-size:12.5px}
+  .grow .gname small{display:block;color:var(--muted);font-size:10.5px}
+  .gtrack{position:relative;height:44px;border-left:1px solid var(--line-2)}
+  .gtrack .col{position:absolute;top:0;bottom:0;border-left:1px solid var(--line-2)}
+  .gbar{position:absolute;top:11px;height:22px;border-radius:5px;display:flex;align-items:center;padding:0 8px;font-size:11px;color:#fff;font-weight:500;overflow:hidden;white-space:nowrap}
+  .gbar .prog{position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.28)}
+  .gb-blue{background:var(--blue)} .gb-green{background:var(--green)} .gb-amber{background:var(--amber-d)} .gb-red{background:var(--red)}
+  .today-line{position:absolute;top:-4px;bottom:0;width:2px;background:var(--red);z-index:3}
+  .today-line::after{content:"本日";position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--red);font-weight:700;white-space:nowrap}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:12px}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+  .stat-inline{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:4px}
+  .stat-inline .si b{font-family:"Barlow Semi Condensed";font-size:22px;font-weight:700;display:block;line-height:1.1}
+  .stat-inline .si span{font-size:11px;color:var(--muted)}
+
+  .footer-note{max-width:1280px;margin:8px auto 0;padding:0 20px;font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-in">
+    <div class="brand">
+      <div class="hardhat">⛑</div>
+      <div>
+        <h1>青海建設 <span style="color:var(--amber)">現場ダッシュボード</span></h1>
+        <div class="site">第2工区 ／ みなとベイタワー新築工事</div>
+      </div>
+    </div>
+    <div class="head-meta">
+      <div class="weather"><span class="wi">☀️</span><div>晴れ 24℃<br><span style="font-size:10px;color:#9FB0C2">降水 10% ／ 風 3m</span></div></div>
+      <div class="clock"><div class="t num" id="clock">--:--:--</div><div class="d" id="date">----</div></div>
+      <button class="bell" title="通知">🔔<span class="dot num">4</span></button>
+      <div class="user">
+        <div class="avatar">SK</div>
+        <div class="info"><b>佐藤 健一</b><br><span>現場代理人</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tabs-in" id="tabbar">
+    <button class="tab active" data-tab="summary"><span class="ti">📊</span>現場サマリー</button>
+    <button class="tab" data-tab="tasks"><span class="ti">🗓️</span>工程・タスク</button>
+    <button class="tab" data-tab="prod"><span class="ti">🏗️</span>生産・在庫</button>
+    <button class="tab" data-tab="staff"><span class="ti">👷</span>人員・勤務</button>
+    <button class="tab" data-tab="sales"><span class="ti">💴</span>受注・売上</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ============ SUMMARY ============ -->
+<section class="panel active" id="summary">
+  <div class="row g4">
+    <div class="kpi amber">
+      <div class="lab">工程進捗率 <span class="ic">🏗️</span></div>
+      <div class="val"><span class="num" data-count="68.4" data-dec="1">0</span><small>%</small></div>
+      <div class="sub"><span class="up">▲ 2.1pt</span><span class="flat">計画比 +1.5pt</span></div>
+    </div>
+    <div class="kpi blue">
+      <div class="lab">本日出面（人工）<span class="ic">👷</span></div>
+      <div class="val"><span class="num" data-count="86">0</span><small>人</small></div>
+      <div class="sub"><span class="flat">予定 90人</span><span class="down">▼ 4人</span></div>
+    </div>
+    <div class="kpi green">
+      <div class="lab">無災害継続 <span class="ic">🦺</span></div>
+      <div class="val"><span class="num" data-count="147">0</span><small>日</small></div>
+      <div class="sub"><span class="up">記録更新中</span></div>
+    </div>
+    <div class="kpi red">
+      <div class="lab">未処理アラート <span class="ic">⚠️</span></div>
+      <div class="val"><span class="num" data-count="4">0</span><small>件</small></div>
+      <div class="sub"><span class="down">高優先度 1件</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <h3><span class="bar"></span>主要指標（対目標）</h3>
+    <div class="dials" id="dials"></div>
+  </div>
+
+  <div class="row g23">
+    <div class="card">
+      <h3><span class="bar"></span>工区別 進捗状況</h3>
+      <div class="plist" id="siteProgress"></div>
+    </div>
+    <div class="card">
+      <h3><span class="bar"></span>アラート・連絡事項</h3>
+      <div class="feed">
+        <div class="alert hi"><div class="ai">⚠️</div><div class="txt">A棟3F 型枠検査に不適合 ― 是正指示<div class="tm">08:40 ／ 品質管理</div></div><span class="tag hi">高</span></div>
+        <div class="alert md"><div class="ai">🚚</div><div class="txt">生コン車 30分遅延の連絡<div class="tm">09:15 ／ 資材</div></div><span class="tag md">中</span></div>
+        <div class="alert md"><div class="ai">🌧️</div><div class="txt">明後日 午後から降雨予報 ― 外部足場作業を調整<div class="tm">09:02 ／ 工程</div></div><span class="tag md">中</span></div>
+        <div class="alert lo"><div class="ai">📋</div><div class="txt">週間安全パトロール 本日15時実施<div class="tm">07:30 ／ 安全</div></div><span class="tag lo">低</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g2">
+    <div class="card">
+      <h3><span class="bar"></span>週間 出来高（計画 vs 実績）</h3>
+      <div class="chart-sm"><canvas id="cWeekly"></canvas></div>
+    </div>
+    <div class="card">
+      <h3><span class="bar"></span>コスト消化状況（累計）</h3>
+      <div class="chart-sm"><canvas id="cCost"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TASKS ============ -->
+<section class="panel" id="tasks">
+  <div class="row g4">
+    <div class="kpi blue"><div class="lab">全タスク <span class="ic">📋</span></div><div class="val"><span class="num" data-count="248">0</span></div><div class="sub flat">今月分</div></div>
+    <div class="kpi green"><div class="lab">完了 <span class="ic">✅</span></div><div class="val"><span class="num" data-count="169">0</span></div><div class="sub"><span class="up">68%</span></div></div>
+    <div class="kpi amber"><div class="lab">進行中 <span class="ic">🔧</span></div><div class="val"><span class="num" data-count="63">0</span></div><div class="sub flat">25%</div></div>
+    <div class="kpi red"><div class="lab">遅延 <span class="ic">⏰</span></div><div class="val"><span class="num" data-count="16">0</span></div><div class="sub"><span class="down">要フォロー</span></div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <h3><span class="bar"></span>工程表（ガントチャート）</h3>
+    <div class="gantt" id="gantt"></div>
+    <div class="legend">
+      <span><i style="background:var(--green)"></i>完了</span>
+      <span><i style="background:var(--blue)"></i>進行中</span>
+      <span><i style="background:var(--amber-d)"></i>予定</span>
+      <span><i style="background:var(--red)"></i>遅延</span>
+      <span><i style="background:rgba(255,255,255,.3);border:1px solid var(--line)"></i>進捗（バー内の明色）</span>
+    </div>
+  </div>
+
+  <div class="row g32">
+    <div class="card">
+      <h3><span class="bar"></span>タスク状態内訳</h3>
+      <div class="chart-sm"><canvas id="cTaskDonut"></canvas></div>
+    </div>
+    <div class="card">
+      <h3><span class="bar"></span>本日の重点タスク</h3>
+      <table>
+        <thead><tr><th>タスク</th><th>担当</th><th>期限</th><th>状態</th></tr></thead>
+        <tbody>
+          <tr><td>A棟3F 配筋検査 是正</td><td>鉄筋班</td><td>本日</td><td><span class="chip late">遅延</span></td></tr>
+          <tr><td>B棟2F コンクリート打設</td><td>躯体班</td><td>本日</td><td><span class="chip warn">進行中</span></td></tr>
+          <tr><td>外部足場 3期組立</td><td>とび班</td><td>7/8</td><td><span class="chip ok">予定通り</span></td></tr>
+          <tr><td>1F 設備スリーブ位置確認</td><td>設備業者</td><td>本日</td><td><span class="chip warn">進行中</span></td></tr>
+          <tr><td>地下 防水施工 完了検査</td><td>防水班</td><td>7/7</td><td><span class="chip done">完了</span></td></tr>
+          <tr><td>資材ヤード 整理・区画</td><td>共通仮設</td><td>7/9</td><td><span class="chip ok">予定通り</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRODUCTION / INVENTORY ============ -->
+<section class="panel" id="prod">
+  <div class="row g4">
+    <div class="kpi amber"><div class="lab">本日出来高 <span class="ic">🏗️</span></div><div class="val"><span class="num" data-count="94">0</span><small>%</small></div><div class="sub flat">対 日次計画</div></div>
+    <div class="kpi blue"><div class="lab">生コン打設 <span class="ic">🚚</span></div><div class="val"><span class="num" data-count="128">0</span><small>m³</small></div><div class="sub up">▲ 予定内</div></div>
+    <div class="kpi red"><div class="lab">要発注 資材 <span class="ic">📦</span></div><div class="val"><span class="num" data-count="3">0</span><small>品目</small></div><div class="sub down">在庫閾値割れ</div></div>
+    <div class="kpi green"><div class="lab">重機稼働率 <span class="ic">⚙️</span></div><div class="val"><span class="num" data-count="81">0</span><small>%</small></div><div class="sub flat">7台稼働</div></div>
+  </div>
+
+  <div class="row g2">
+    <div class="card">
+      <h3><span class="bar"></span>日次出来高（計画 vs 実績）</h3>
+      <div class="chart-wrap"><canvas id="cProd"></canvas></div>
+    </div>
+    <div class="card">
+      <h3><span class="bar"></span>主要資材 在庫水準</h3>
+      <div class="plist" id="stock"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="bar"></span>発注・納入管理</h3>
+    <table>
+      <thead><tr><th>資材</th><th class="n">現在庫</th><th class="n">発注点</th><th>納入予定</th><th>状態</th></tr></thead>
+      <tbody>
+        <tr><td>異形鉄筋 D19</td><td class="n">2.1t</td><td class="n">3.0t</td><td>7/8</td><td><span class="chip late">要発注</span></td></tr>
+        <tr><td>合板 型枠用</td><td class="n">180枚</td><td class="n">250枚</td><td>7/7</td><td><span class="chip warn">発注済</span></td></tr>
+        <tr><td>単管パイプ</td><td class="n">640本</td><td class="n">400本</td><td>―</td><td><span class="chip ok">十分</span></td></tr>
+        <tr><td>生コン 21-18-20</td><td class="n">当日搬入</td><td class="n">―</td><td>本日</td><td><span class="chip warn">搬入中</span></td></tr>
+        <tr><td>アンカーボルト M16</td><td class="n">420本</td><td class="n">500本</td><td>7/9</td><td><span class="chip late">要発注</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ STAFF ============ -->
+<section class="panel" id="staff">
+  <div class="row g4">
+    <div class="kpi blue"><div class="lab">本日出面 <span class="ic">👷</span></div><div class="val"><span class="num" data-count="86">0</span><small>人</small></div><div class="sub flat">8社</div></div>
+    <div class="kpi green"><div class="lab">出勤率 <span class="ic">✅</span></div><div class="val"><span class="num" data-count="95.6" data-dec="1">0</span><small>%</small></div><div class="sub up">▲ 良好</div></div>
+    <div class="kpi amber"><div class="lab">残業予定 <span class="ic">🌙</span></div><div class="val"><span class="num" data-count="12">0</span><small>人</small></div><div class="sub flat">平均1.5h</div></div>
+    <div class="kpi red"><div class="lab">欠員 <span class="ic">⚠️</span></div><div class="val"><span class="num" data-count="4">0</span><small>人</small></div><div class="sub down">とび班 -2</div></div>
+  </div>
+
+  <div class="row g2">
+    <div class="card">
+      <h3><span class="bar"></span>週間 出面推移（職種別）</h3>
+      <div class="chart-wrap"><canvas id="cAttend"></canvas></div>
+    </div>
+    <div class="card">
+      <h3><span class="bar"></span>職種別 人員構成（本日）</h3>
+      <div class="chart-wrap"><canvas id="cTrade"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="bar"></span>協力会社別 出面状況</h3>
+    <table>
+      <thead><tr><th>協力会社</th><th>職種</th><th class="n">予定</th><th class="n">出面</th><th class="n">残業</th><th>状態</th></tr></thead>
+      <tbody>
+        <tr><td>大和鉄筋工業</td><td>鉄筋工</td><td class="n">18</td><td class="n">18</td><td class="n">3</td><td><span class="chip ok">充足</span></td></tr>
+        <tr><td>みなと型枠</td><td>大工・型枠</td><td class="n">22</td><td class="n">21</td><td class="n">5</td><td><span class="chip ok">充足</span></td></tr>
+        <tr><td>青葉とび土工</td><td>とび・土工</td><td class="n">16</td><td class="n">14</td><td class="n">2</td><td><span class="chip warn">欠員</span></td></tr>
+        <tr><td>光電設備</td><td>電気設備</td><td class="n">10</td><td class="n">10</td><td class="n">0</td><td><span class="chip ok">充足</span></td></tr>
+        <tr><td>東西管工</td><td>給排水</td><td class="n">8</td><td class="n">8</td><td class="n">2</td><td><span class="chip ok">充足</span></td></tr>
+        <tr><td>共栄重機</td><td>オペレーター</td><td class="n">6</td><td class="n">5</td><td class="n">0</td><td><span class="chip warn">欠員</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ SALES / ORDERS ============ -->
+<section class="panel" id="sales">
+  <div class="row g4">
+    <div class="kpi green"><div class="lab">今期 売上高 <span class="ic">💴</span></div><div class="val">¥<span class="num" data-count="42.6" data-dec="1">0</span><small>億</small></div><div class="sub"><span class="up">▲ 8.4%</span><span class="flat">前年同期比</span></div></div>
+    <div class="kpi blue"><div class="lab">受注残高 <span class="ic">📁</span></div><div class="val">¥<span class="num" data-count="118" >0</span><small>億</small></div><div class="sub flat">14件</div></div>
+    <div class="kpi amber"><div class="lab">売上総利益率 <span class="ic">📈</span></div><div class="val"><span class="num" data-count="14.2" data-dec="1">0</span><small>%</small></div><div class="sub"><span class="up">▲ 0.6pt</span></div></div>
+    <div class="kpi red"><div class="lab">新規引合 <span class="ic">🤝</span></div><div class="val"><span class="num" data-count="7">0</span><small>件</small></div><div class="sub flat">見積中 ¥53億</div></div>
+  </div>
+
+  <div class="row g23">
+    <div class="card">
+      <h3><span class="bar"></span>月次 売上・粗利 推移（対計画）</h3>
+      <div class="chart-wrap"><canvas id="cRevenue"></canvas></div>
+    </div>
+    <div class="card">
+      <h3><span class="bar"></span>工種別 受注構成</h3>
+      <div class="chart-sm"><canvas id="cSeg"></canvas></div>
+    </div>
+  </div>
+
+  <div class="row g2">
+    <div class="card">
+      <h3><span class="bar"></span>主要顧客別 受注高</h3>
+      <div class="chart-sm"><canvas id="cClient"></canvas></div>
+    </div>
+    <div class="card">
+      <h3><span class="bar"></span>進行中プロジェクト（受注案件）</h3>
+      <table>
+        <thead><tr><th>案件</th><th>発注者</th><th class="n">請負額</th><th class="n">進捗</th></tr></thead>
+        <tbody>
+          <tr><td>みなとベイタワー新築</td><td>湾岸開発</td><td class="n">¥58億</td><td class="n">68%</td></tr>
+          <tr><td>中央病院 増築</td><td>県厚生連</td><td class="n">¥27億</td><td class="n">41%</td></tr>
+          <tr><td>物流センターⅢ期</td><td>ロジ商事</td><td class="n">¥19億</td><td class="n">88%</td></tr>
+          <tr><td>市立小学校 改修</td><td>市 教育委員会</td><td class="n">¥8億</td><td class="n">23%</td></tr>
+          <tr><td>河川護岸 補強工事</td><td>国交省</td><td class="n">¥12億</td><td class="n">55%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</main>
+<div class="footer-note">※ 本ダッシュボードはデモ用のサンプルデータです。数値は実在の案件・企業とは関係ありません。</div>
+
+<script>
+/* ---------- clock ---------- */
+function tick(){
+  const n=new Date();
+  const p=x=>String(x).padStart(2,'0');
+  document.getElementById('clock').textContent=`${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;
+  const w=['日','月','火','水','木','金','土'][n.getDay()];
+  document.getElementById('date').textContent=`${n.getFullYear()}年${n.getMonth()+1}月${n.getDate()}日（${w}）`;
+}
+tick();setInterval(tick,1000);
+
+/* ---------- animated counters ---------- */
+function animate(el){
+  const target=parseFloat(el.dataset.count);
+  const dec=parseInt(el.dataset.dec||'0');
+  const dur=1100;const start=performance.now();
+  function step(t){
+    const p=Math.min((t-start)/dur,1);
+    const e=1-Math.pow(1-p,3);
+    el.textContent=(target*e).toLocaleString('ja-JP',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+    if(p<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+function runCounters(scope){scope.querySelectorAll('[data-count]').forEach(el=>{if(!el.dataset.done){el.dataset.done=1;animate(el);}});}
+
+/* ---------- dials (summary) ---------- */
+const dialData=[
+  {name:'工程進捗',val:68,tgt:'計画 67%',col:'--amber'},
+  {name:'品質適合率',val:97,tgt:'目標 98%',col:'--green'},
+  {name:'安全達成度',val:92,tgt:'目標 95%',col:'--blue'},
+  {name:'原価率',val:83,tgt:'予算内 85%',col:'--blue'},
+];
+function buildDials(){
+  const box=document.getElementById('dials');if(box.dataset.done)return;box.dataset.done=1;
+  const R=48,C=2*Math.PI*R;
+  dialData.forEach(d=>{
+    const col=getComputedStyle(document.documentElement).getPropertyValue(d.col);
+    const el=document.createElement('div');el.className='dial';
+    el.innerHTML=`<div class="ring">
+      <svg width="112" height="112">
+        <circle cx="56" cy="56" r="${R}" fill="none" stroke="var(--line-2)" stroke-width="11"/>
+        <circle cx="56" cy="56" r="${R}" fill="none" stroke="${col}" stroke-width="11" stroke-linecap="round"
+          stroke-dasharray="${C}" stroke-dashoffset="${C}" class="ring-fg"/>
+      </svg>
+      <div class="ctr"><div><b class="num">0</b><span>%</span></div></div>
+    </div>
+    <div class="name">${d.name}</div><div class="tgt">${d.tgt}</div>`;
+    box.appendChild(el);
+    const fg=el.querySelector('.ring-fg'),lab=el.querySelector('b');
+    setTimeout(()=>{
+      fg.style.transition='stroke-dashoffset 1.2s cubic-bezier(.2,.7,.2,1)';
+      fg.style.strokeDashoffset=C*(1-d.val/100);
+      let s=performance.now();
+      (function st(t){const p=Math.min((t-s)/1200,1);lab.textContent=Math.round(d.val*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(st);})(s);
+    },150);
+  });
+}
+
+/* ---------- progress lists ---------- */
+const siteProgress=[
+  {n:'A棟（高層部）',s:'躯体 15F/20F',v:72,c:'blue'},
+  {n:'B棟（低層部）',s:'内装 3F/5F',v:58,c:'blue'},
+  {n:'地下・基礎',s:'完了',v:100,c:'green'},
+  {n:'外構・造成',s:'着手',v:24,c:'amber'},
+  {n:'設備工事',s:'配管 遅延気味',v:46,c:'red'},
+];
+const stockData=[
+  {n:'異形鉄筋 D19',s:'発注点割れ',v:28,c:'red'},
+  {n:'型枠合板',s:'発注済・納入待ち',v:52,c:'amber'},
+  {n:'単管パイプ',s:'十分',v:88,c:'green'},
+  {n:'セパレーター',s:'適正',v:66,c:'blue'},
+  {n:'アンカーM16',s:'発注点割れ',v:34,c:'red'},
+];
+function buildList(id,data,showPct){
+  const box=document.getElementById(id);if(box.dataset.done)return;box.dataset.done=1;
+  data.forEach(d=>{
+    const it=document.createElement('div');it.className='pitem';
+    it.innerHTML=`<div class="top"><b>${d.n}</b><span class="pct">${d.v}%</span></div>
+      <div class="track"><div class="fill ${d.c}"></div></div>
+      <div class="meta">${d.s}</div>`;
+    box.appendChild(it);
+    setTimeout(()=>{it.querySelector('.fill').style.width=d.v+'%';},200);
+  });
+}
+
+/* ---------- gantt ---------- */
+const ganttData=[
+  {n:'山留・掘削',sub:'土工事',s:0,e:1.4,c:'gb-green',p:100},
+  {n:'基礎・地下躯体',sub:'RC工事',s:1.2,e:2.8,c:'gb-green',p:100},
+  {n:'A棟 躯体',sub:'鉄筋・型枠・打設',s:2.5,e:4.6,c:'gb-blue',p:74},
+  {n:'B棟 躯体',sub:'RC工事',s:3.0,e:4.4,c:'gb-blue',p:60},
+  {n:'外部足場',sub:'仮設',s:2.8,e:5.0,c:'gb-amber',p:35},
+  {n:'設備配管',sub:'機械・電気',s:3.4,e:5.2,c:'gb-red',p:40},
+  {n:'内装・仕上',sub:'建築',s:4.4,e:5.8,c:'gb-amber',p:8},
+  {n:'外構・検査',sub:'完成',s:5.2,e:6,c:'gb-amber',p:0},
+];
+function buildGantt(){
+  const box=document.getElementById('gantt');if(box.dataset.done)return;box.dataset.done=1;
+  const months=['4月','5月','6月','7月','8月','9月'];
+  const h=document.createElement('div');h.className='gh';
+  h.innerHTML=`<div style="padding:6px 8px">作業項目</div><div class="months">${months.map(m=>`<span>${m}</span>`).join('')}</div>`;
+  box.appendChild(h);
+  const today=3.2; // early July
+  ganttData.forEach(g=>{
+    const row=document.createElement('div');row.className='grow';
+    const cols=[1,2,3,4,5].map(i=>`<div class="col" style="left:${i/6*100}%"></div>`).join('');
+    row.innerHTML=`<div class="gname">${g.n}<small>${g.sub}</small></div>
+      <div class="gtrack">${cols}
+        <div class="today-line" style="left:${today/6*100}%"></div>
+        <div class="gbar ${g.c}" style="left:${g.s/6*100}%;width:0"><div class="prog" style="width:${g.p}%"></div>${g.p}%</div>
+      </div>`;
+    box.appendChild(row);
+    const bar=row.querySelector('.gbar');
+    setTimeout(()=>{bar.style.transition='width .9s ease';bar.style.width=((g.e-g.s)/6*100)+'%';},250);
+  });
+}
+
+/* ---------- Chart.js ---------- */
+Chart.defaults.font.family="'Noto Sans JP',sans-serif";
+Chart.defaults.font.size=12;
+Chart.defaults.color='#6B7683';
+const Cc={amber:'#FFB000',amberD:'#E39A00',blue:'#0E6BA8',blueL:'#3E9BD8',red:'#E23B3B',green:'#2FA84F',line:'#E7EBEF'};
+const grid={color:Cc.line,drawBorder:false};
+const built={};
+function chart(id,cfg){if(built[id])return;const el=document.getElementById(id);if(!el)return;built[id]=new Chart(el,cfg);}
+
+function buildCharts(tab){
+  if(tab==='summary'){
+    chart('cWeekly',{type:'bar',data:{labels:['月','火','水','木','金','土'],
+      datasets:[
+        {label:'計画',data:[100,100,100,100,100,60],backgroundColor:'#CBD5DF',borderRadius:4,barPercentage:.6},
+        {label:'実績',data:[104,96,110,92,101,58],backgroundColor:Cc.amber,borderRadius:4,barPercentage:.6}]},
+      options:barOpt('%')});
+    chart('cCost',{type:'line',data:{labels:['4月','5月','6月','7月','8月','9月'],
+      datasets:[
+        {label:'予算(累計)',data:[15,32,50,68,85,100],borderColor:'#B9C4CF',borderDash:[6,4],pointRadius:0,tension:.3,borderWidth:2},
+        {label:'消化実績',data:[14,30,47,63,null,null],borderColor:Cc.blue,backgroundColor:'rgba(14,107,168,.08)',fill:true,pointRadius:3,tension:.3,borderWidth:2.5}]},
+      options:lineOpt('%')});
+  }
+  if(tab==='tasks'){
+    chart('cTaskDonut',{type:'doughnut',data:{labels:['完了','進行中','遅延','未着手'],
+      datasets:[{data:[169,63,16,0],backgroundColor:[Cc.green,Cc.blue,Cc.red,'#CBD5DF'],borderWidth:2,borderColor:'#fff'}]},
+      options:{cutout:'62%',plugins:{legend:{position:'bottom',labels:{padding:14,usePointStyle:true,pointStyle:'circle'}}},maintainAspectRatio:false}});
+  }
+  if(tab==='prod'){
+    chart('cProd',{type:'bar',data:{labels:['6/30','7/1','7/2','7/3','7/4','7/5','7/6'],
+      datasets:[
+        {label:'計画',data:[100,100,100,100,100,100,100],backgroundColor:'#CBD5DF',borderRadius:4,barPercentage:.55},
+        {label:'実績',data:[97,103,88,110,95,101,94],backgroundColor:Cc.amber,borderRadius:4,barPercentage:.55}]},
+      options:barOpt('%')});
+  }
+  if(tab==='staff'){
+    chart('cAttend',{type:'bar',data:{labels:['月','火','水','木','金','土'],
+      datasets:[
+        {label:'鉄筋・型枠',data:[38,40,39,41,39,20],backgroundColor:Cc.blue,borderRadius:3},
+        {label:'とび・土工',data:[16,14,15,14,16,8],backgroundColor:Cc.amber,borderRadius:3},
+        {label:'設備',data:[18,18,17,18,18,6],backgroundColor:Cc.green,borderRadius:3},
+        {label:'その他',data:[12,11,12,13,12,4],backgroundColor:'#9AA7B4',borderRadius:3}]},
+      options:{...barOpt('人'),scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid,ticks:{callback:v=>v+'人'}}}}});
+    chart('cTrade',{type:'polarArea',data:{labels:['鉄筋工','大工/型枠','とび','電気','給排水','重機'],
+      datasets:[{data:[18,21,14,10,8,5],backgroundColor:['rgba(14,107,168,.75)','rgba(255,176,0,.75)','rgba(46,168,79,.75)','rgba(62,155,216,.75)','rgba(226,59,59,.7)','rgba(154,167,180,.75)'],borderWidth:1,borderColor:'#fff'}]},
+      options:{plugins:{legend:{position:'right',labels:{padding:10,usePointStyle:true,pointStyle:'circle',font:{size:11}}}},scales:{r:{grid:{color:Cc.line},ticks:{display:false}}},maintainAspectRatio:false}});
+  }
+  if(tab==='sales'){
+    chart('cRevenue',{type:'bar',data:{labels:['1月','2月','3月','4月','5月','6月'],
+      datasets:[
+        {type:'bar',label:'売上高(億)',data:[6.2,5.8,7.9,7.1,7.6,8.0],backgroundColor:Cc.blue,borderRadius:4,order:2,yAxisID:'y'},
+        {type:'line',label:'粗利率(%)',data:[13.1,12.8,14.6,13.9,14.2,15.0],borderColor:Cc.amber,backgroundColor:Cc.amber,pointRadius:3,tension:.3,borderWidth:2.5,order:1,yAxisID:'y1'},
+        {type:'line',label:'計画(億)',data:[6,6,7.5,7,7.5,7.8],borderColor:'#B9C4CF',borderDash:[6,4],pointRadius:0,tension:.3,borderWidth:2,order:0,yAxisID:'y'}]},
+      options:{maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},
+        plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'circle',padding:12}}},
+        scales:{x:{grid:{display:false}},y:{position:'left',grid,ticks:{callback:v=>'¥'+v+'億'}},y1:{position:'right',grid:{display:false},min:10,max:18,ticks:{callback:v=>v+'%'}}}}});
+    chart('cSeg',{type:'doughnut',data:{labels:['建築(民間)','建築(公共)','土木','リニューアル'],
+      datasets:[{data:[48,22,20,10],backgroundColor:[Cc.blue,Cc.blueL,Cc.amber,Cc.green],borderWidth:2,borderColor:'#fff'}]},
+      options:{cutout:'58%',plugins:{legend:{position:'bottom',labels:{padding:12,usePointStyle:true,pointStyle:'circle'}}},maintainAspectRatio:false}});
+    chart('cClient',{type:'bar',data:{labels:['湾岸開発','県厚生連','ロジ商事','国交省','市 他'],
+      datasets:[{label:'受注高(億)',data:[58,27,19,12,14],backgroundColor:[Cc.blue,Cc.blue,Cc.blue,Cc.amber,Cc.amber],borderRadius:4}]},
+      options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid,ticks:{callback:v=>'¥'+v+'億'}},y:{grid:{display:false}}}}});
+  }
+}
+function barOpt(unit){return{maintainAspectRatio:false,plugins:{legend:{position:'top',align:'end',labels:{usePointStyle:true,pointStyle:'circle',boxWidth:8,padding:12}}},scales:{x:{grid:{display:false}},y:{grid,ticks:{callback:v=>v+unit}}}};}
+function lineOpt(unit){return{maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{position:'top',align:'end',labels:{usePointStyle:true,pointStyle:'circle',boxWidth:8,padding:12}}},scales:{x:{grid:{display:false}},y:{grid,ticks:{callback:v=>v+unit}}}};}
+
+/* ---------- tab switching ---------- */
+function activate(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===tab));
+  const scope=document.getElementById(tab);
+  runCounters(scope);
+  if(tab==='summary'){buildDials();buildList('siteProgress',siteProgress);}
+  if(tab==='prod'){buildList('stock',stockData);}
+  if(tab==='tasks'){buildGantt();}
+  setTimeout(()=>buildCharts(tab),60);
+}
+document.getElementById('tabbar').addEventListener('click',e=>{
+  const b=e.target.closest('.tab');if(b)activate(b.dataset.tab);
+});
+/* init */
+activate('summary');
+</script>
+</body>
+</html>
